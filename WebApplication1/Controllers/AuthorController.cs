@@ -42,6 +42,15 @@ namespace BookStore.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Create(Author author)
         {
+
+            if (!ModelState.IsValid)
+            {
+
+
+                return View();
+
+
+            }
             try
             {
 

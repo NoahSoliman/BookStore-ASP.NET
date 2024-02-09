@@ -1,4 +1,5 @@
 ﻿using BookStore.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Build.Framework;
 using System.ComponentModel.DataAnnotations;
 
@@ -17,7 +18,7 @@ namespace BookStore.ViewModels
 
 
         [MaxLength(120)]
-        [MinLength(5)]
+        [MinLength(6)]
         public string Description { get; set; }
 
 
@@ -26,6 +27,10 @@ namespace BookStore.ViewModels
         public List<Author>? Authors { get; set; }
         //عن طريق اضافة اشارة التعجب هنا نخبر الموديل ان المؤلف هو ليس شيء اجباري في عملية التحقق من البيانات
 
+        public string? ImgUrl { get; set; }
+
+
+        public IFormFile? File { get; set; }
     }
 }
 

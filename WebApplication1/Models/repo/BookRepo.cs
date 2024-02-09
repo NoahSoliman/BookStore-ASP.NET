@@ -63,6 +63,7 @@
             book.Title = newBook.Title;
             book.Description = newBook.Description;
             book.Author = newBook.Author;
+            book.ImgUrl = newBook.ImgUrl;
 
         }
     }

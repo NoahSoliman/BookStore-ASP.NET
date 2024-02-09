@@ -4,6 +4,7 @@ using BookStore.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
+using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 
 namespace BookStore.Controllers
 {
@@ -13,13 +14,14 @@ namespace BookStore.Controllers
 
         private readonly IBookStoreRepo<Book> bookRepo;
         private readonly IBookStoreRepo<Author> authorRepo;
+        private readonly IHostingEnvironment hosting;
 
-        public BookController(IBookStoreRepo<Book> BookRepo, IBookStoreRepo<Author> AuthorRepo)
+        public BookController(IBookStoreRepo<Book> BookRepo, IBookStoreRepo<Author> AuthorRepo, IHostingEnvironment hosting)
         {
 
             this.bookRepo = BookRepo;
             this.authorRepo = AuthorRepo;
-
+            this.hosting = hosting;
         }
         public ActionResult Index()
         {
@@ -58,12 +60,14 @@ namespace BookStore.Controllers
             {
                 try
                 {
+
+
+
                     if (model.AuthorId == -1)
                     {
                         var modelForPostCreate = new BookAuthorViewModel
                         {
                             Authors = FillSelectList(),
-
                         };
                         //ViewBag ميزة تقوم بتمكيننا من ارسال قيمة بين الواجهة والخلفية
                         //Message يمكننا اضافة اي شي بديلاً لها و
@@ -72,6 +76,11 @@ namespace BookStore.Controllers
                         //هنا نقوم بإعادة قائمة فارغة بالمؤلفين عندما لا يتم اختيار اي مؤلف 
                     }
 
+
+                    string fileName;
+                    string uploads = Path.Combine(hosting.WebRootPath, "uploads");
+
+
                     Book book = new Book
                     {
                         Id = model.BookId,
@@ -79,6 +88,19 @@ namespace BookStore.Controllers
                         Description = model.Description,
                         Author = authorRepo.Find(model.AuthorId)
                     };
+
+
+                    if (model.File != null)
+                    {
+                        fileName = model.File.FileName;
+                        string fullPath = Path.Combine(uploads, fileName);
+                        var fileStream = new FileStream(fullPath, FileMode.Create);
+                        model.File.CopyTo(fileStream);
+                        fileStream.Close();
+
+                        book.ImgUrl = fileName;
+                    }
+
 
                     bookRepo.Add(book);
                     return RedirectToAction(nameof(Index));
@@ -109,7 +131,7 @@ namespace BookStore.Controllers
                 Title = book.Title,
                 Description = book.Description,
                 Authors = FillSelectList(),
-
+                ImgUrl = book.ImgUrl
 
             };
 
@@ -117,6 +139,8 @@ namespace BookStore.Controllers
             {
                 model.AuthorId = book.Author.Id;
             }
+
+
             return View(model);
         }
 
@@ -127,28 +151,61 @@ namespace BookStore.Controllers
         {
             try
             {
+                var bookForPostEdit = bookRepo.Find(id);
+
                 if (model.AuthorId == -1)
                 {
 
-                    var bookForPostEdit = bookRepo.Find(id);
                     var modelForPostEdit = new BookAuthorViewModel
                     {
                         BookId = bookForPostEdit.Id,
                         Title = bookForPostEdit.Title,
                         Description = bookForPostEdit.Description,
                         Authors = FillSelectList(),
-
+                        ImgUrl = bookForPostEdit.ImgUrl
 
                     };
                     ViewBag.Message = "Please Select An author!";
                     return View(modelForPostEdit);
                 }
+
+
+
+
                 Book book = new Book
                 {
                     Title = model.Title,
                     Description = model.Description,
-                    Author = authorRepo.Find(model.AuthorId)
+                    Author = authorRepo.Find(model.AuthorId),
                 };
+
+
+
+                string fileName;
+                string uploads = Path.Combine(hosting.WebRootPath, "uploads");
+                if (model.File != null)
+                {
+                    string oldFileName = bookRepo.Find(id).ImgUrl;
+                    if (oldFileName != null)
+                    {
+                        string fullOldPath = Path.Combine(uploads, oldFileName);
+                        System.IO.File.Delete(fullOldPath);
+
+                    }
+                    fileName = model.File.FileName;
+
+                    //fileName = bookForPostEdit.ImgUrl;
+
+                    string fullPath = Path.Combine(uploads, fileName);
+
+                    var fileStream = new FileStream(fullPath, FileMode.Create);
+                    model.File.CopyTo(fileStream);
+                    fileStream.Close();
+
+                    book.ImgUrl = fileName;
+
+
+                }
 
                 bookRepo.Update(id, book);
                 return RedirectToAction(nameof(Index));
